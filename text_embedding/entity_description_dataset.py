@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 class EntityDescriptionDataset(Dataset):
+    
     def __init__(self, input_file: str):
         self.input_file = input_file
         self.data = []

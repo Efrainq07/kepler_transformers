@@ -6,26 +6,23 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 class EmbeddingPipeline:
-    def __init__(self, model_name: str, device: torch.device, max_length: int = 512):
+    def __init__(self, model_name: str, instruction: str, device: torch.device, max_length: int = 512):
         self.device = device
         self.model_name = model_name
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name).to(device)
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).to(device)
         self.model.eval()  # Ensure the model is frozen
         self.max_length = max_length
         self.embeddings_list = []  # Store embeddings for batch processing
         self.checkpoint_count = 0
+        self.instruction = instruction
 
     def generate_embeddings(self, dataloader: DataLoader, output_dir: str):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         # Iterate over DataLoader to generate embeddings
         for descriptions in tqdm(dataloader, total=len(dataloader), desc="Generating embeddings", unit="batch"):
-            tokens = self.tokenizer(descriptions, return_tensors='pt', padding=True, truncation=True, max_length=self.max_length).to(self.device)
-
             with torch.no_grad():
-                output = self.model(**tokens)
-                embeddings = output.last_hidden_state.mean(dim=1).cpu().numpy()  # Take the mean as the embedding
+                embeddings = self.model.encode(descriptions, instruction=self.instruction, max_length=self.max_length)
             self.save_checkpoint(output_dir, embeddings)
             self.checkpoint_count+=1
         
