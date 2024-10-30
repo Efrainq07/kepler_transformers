@@ -11,7 +11,6 @@ class EmbeddingPipeline:
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name).to(device)
-        self.model = torch.nn.DataParallel(self.model)
         self.model.eval()  # Ensure the model is frozen
         self.max_length = max_length
         self.embeddings_list = []  # Store embeddings for batch processing
