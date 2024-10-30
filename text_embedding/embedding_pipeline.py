@@ -10,6 +10,7 @@ class EmbeddingPipeline:
         self.device = device
         self.model_name = model_name
         self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model.eval()  # Ensure the model is frozen
         self.max_length = max_length
         self.embeddings_list = []  # Store embeddings for batch processing
@@ -21,8 +22,10 @@ class EmbeddingPipeline:
             os.makedirs(output_dir)
         # Iterate over DataLoader to generate embeddings
         for descriptions in tqdm(dataloader, total=len(dataloader), desc="Generating embeddings", unit="batch"):
+            tokens = self.tokenizer(descriptions, padding="longest", truncation=True, max_length=512, return_tensors="pt")
             with torch.no_grad():
-                embeddings = self.model.encode(descriptions, instruction=self.instruction, max_length=self.max_length)
+                embeddings = self.model(**tokens)[0]
+                
             self.save_checkpoint(output_dir, embeddings)
             self.checkpoint_count+=1
         
